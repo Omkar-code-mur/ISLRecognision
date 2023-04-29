@@ -9,6 +9,29 @@ import mediapipe as mp
 import streamlit as st
 
 
+st.title("Sign Language Recognition")
+st.write("  ")
+
+st.image("img1.png")
+st.write("""There have been several advancements in technology and a lot of research has been done to help the people who are deaf and dumb. Aiding the cause, Deep learning, and computer vision can be used too to make an impact on this cause.
+
+This can be very helpful for the deaf and dumb people in communicating with others as knowing sign language is not something that is common to all, moreover, this can be extended to creating automatic editors, where the person can easily write by just their hand gestures.
+
+""")
+
+st.subheader("Libraries & Modules Used")
+st.markdown("""streamlit \n
+opencv-python\n
+mediapipe\n
+Python == 3^\n
+Keras == 3.6^\n
+Tensorflow == 2.10^\n
+Numpy == 1.23^\n
+Pandas == 1.3.2^\n
+Matplotlib == 3.6^\n
+Seaborn == 0.12^\n
+Scikit-Learn == 1.1^""")
+
 mp_holistic = mp.solutions.holistic # Holistic model
 mp_drawing = mp.solutions.drawing_utils # Drawing utis
 
@@ -124,72 +147,83 @@ def prob_viz(res, actions, input_frame, colors):
     return output_frame
 
 
-# 1. New detection variables
-sequence = []
-sentence = []
-predictions = []
-threshold = 0.4
+
 
 cap = cv2.VideoCapture(0)
 
-st.title("Sign Language Recognition")
+
 
 frame_placeholder = st.empty()
-stop_button_pressed = st.button("stop")
+
+
 # Set mediapipe model
-with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
-    while cap.isOpened() and not stop_button_pressed:
 
-        # Read feed
-        ret, frame = cap.read()
+def start_1():
+    # 1. New detection variables
+    sequence = []
+    sentence = []
+    predictions = []
+    threshold = 0.4
+    with mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5) as holistic:
+        while cap.isOpened() and not stop_button_pressed:
 
-        if not ret:
-            st.write("the video capture has ended.")
-        # # Make detections
-        image, results = mediapipe_detection(frame, holistic)
-        print(results)
-        # image = frame
-        #
-        # Draw landmarks
-        # draw_styled_landmarks(image, results)
+            # Read feed
+            ret, frame = cap.read()
 
-        # 2. Prediction logic
-        keypoints = extract_keypoints(results)
-        sequence.append(keypoints)
-        sequence = sequence[-30:]
+            if not ret:
+                st.write("the video capture has ended.")
+            # # Make detections
+            image, results = mediapipe_detection(frame, holistic)
+            print(results)
+            # image = frame
+            #
+            # Draw landmarks
+            # draw_styled_landmarks(image, results)
 
-        if len(sequence) == 30:
-            res = model.predict(np.expand_dims(sequence, axis=0))[0]
-            print(actions[np.argmax(res)])
-            predictions.append(np.argmax(res))
+            # 2. Prediction logic
+            keypoints = extract_keypoints(results)
+            sequence.append(keypoints)
+            sequence = sequence[-30:]
 
-            # 3. Viz logic
-            if np.unique(predictions[-10:])[0] == np.argmax(res):
-                if res[np.argmax(res)] > threshold:
+            if len(sequence) == 30:
+                res = model.predict(np.expand_dims(sequence, axis=0))[0]
+                print(actions[np.argmax(res)])
+                predictions.append(np.argmax(res))
 
-                    if len(sentence) > 0:
-                        if actions[np.argmax(res)] != sentence[-1]:
+                # 3. Viz logic
+                if np.unique(predictions[-10:])[0] == np.argmax(res):
+                    if res[np.argmax(res)] > threshold:
+
+                        if len(sentence) > 0:
+                            if actions[np.argmax(res)] != sentence[-1]:
+                                sentence.append(actions[np.argmax(res)])
+                        else:
                             sentence.append(actions[np.argmax(res)])
-                    else:
-                        sentence.append(actions[np.argmax(res)])
 
-            if len(sentence) > 5:
-                sentence = sentence[-5:]
+                if len(sentence) > 5:
+                    sentence = sentence[-5:]
 
-            # Viz probabilities
-            image = prob_viz(res, actions, image, colors)
+                # Viz probabilities
+                image = prob_viz(res, actions, image, colors)
 
-        cv2.rectangle(image, (0, 0), (640, 40), (245, 117, 16), -1)
-        cv2.putText(image, ' '.join(sentence), (3, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.rectangle(image, (0, 0), (640, 40), (245, 117, 16), -1)
+            cv2.putText(image, ' '.join(sentence), (3, 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-        # Show to screen
-        frame = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
-        frame_placeholder.image(frame,channels="RGB")
+            # Show to screen
+            frame = cv2.cvtColor(image,cv2.COLOR_BGR2RGB)
+            frame_placeholder.image(frame,channels="RGB")
 
-        # Break gracefully
-        if cv2.waitKey(10) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
+            # Break gracefully
+            if cv2.waitKey(10) & 0xFF == ord('q'):
+                break
+        cap.release()
+        cv2.destroyAllWindows()
+
+
+start = st.button("start")
+stop_button_pressed = st.button("stop")
+
+if start:
+    start_1()
 
